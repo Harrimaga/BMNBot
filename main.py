@@ -12,12 +12,6 @@ Quotes = []
 global Info
 Info = ""
 
-with open("BMNQuotes", "wb") as out_quotes:
-    pickle.dump(Quotes, out_quotes)
-
-with open("BMNInfo", "wb") as out_quotes:
-    pickle.dump(Info, out_quotes)
-
 with open("BMNQuotes", "rb") as in_quotes:
     Quotes = pickle.load(in_quotes)
 
@@ -31,13 +25,11 @@ def is_quote_master():
 
 @client.event
 async def on_ready():
-
     print("Ready!")
     stream = discord.Activity(name="BMN 2020", url="https://betamusicnight.nl", type=discord.ActivityType.listening)
     await client.change_presence(activity=stream)
 
-
-@client.command(name='AddQuote')
+@client.command(name='AddQuote', hidden=True)
 @is_quote_master()
 async def _addQuote(context, *args):
     quote = " ".join(args)
@@ -46,10 +38,24 @@ async def _addQuote(context, *args):
     with open("BMNQuotes", "wb") as out_quotes:
         pickle.dump(Quotes, out_quotes)
 
-@client.command(name='Quote')
+@client.command(name='Quote', aliases=['quote'], help="Een random quote")
 @commands.has_any_role(618181358594031616, 619144995726950444)
 async def _quote(context, *args):
     await context.message.channel.send(random.choice(Quotes))
 
+@client.command(name='SetInfo', hidden=True)
+@commands.has_role(618181358594031616)
+async def _setInfo(context):
+    global Info
+    Info = context.message.content[9:]
+    print(context.message.content)
+    with open("BMNInfo", "wb") as out_info:
+        pickle.dump(Info, out_info)
 
-client.run("NTAwNjI4NTQ4NTE2NzA4MzUy.Xbr9WA.owlUTYMJQmqSjIo6KEIRwnbvmtk")
+@client.command(name='Info', aliases=['info'], help="Het laatste nieuws!")
+@commands.has_any_role(618181358594031616, 619144995726950444)
+async def _info(context):
+    global Info
+    await context.message.channel.send(Info)
+
+client.run("NTAwNjI4NTQ4NTE2NzA4MzUy.XbsLQQ._r5tLlNg3xFwb3k-VbkYG2A7g08")
