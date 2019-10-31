@@ -1,75 +1,55 @@
 import discord
 from discord.ext.commands import Bot
 from discord.ext import commands
-from discord.utils import get
-from datetime import datetime, timedelta, date
 import pickle
-import asyncio
+import random
 
 Client = discord.Client()
 client = commands.Bot(command_prefix = "!")
 
-firstItems = {}
+global Quotes
+Quotes = []
+global Info
+Info = ""
 
-global Songs
-Songs = dict.fromkeys(firstItems)
+with open("BMNQuotes", "wb") as out_quotes:
+    pickle.dump(Quotes, out_quotes)
 
-with open("SongDict", "rb") as load:
-    Songs = pickle.load(load)
+with open("BMNInfo", "wb") as out_quotes:
+    pickle.dump(Info, out_quotes)
 
-async def checkSongs():
-    await client.wait_until_ready()
-    while not client.is_closed:
-        now = datetime.utcnow()
-        tobedeleted = []
-        for times in Songs.keys():
-            if times.hour == now.hour and times.day == now.day:
-                await client.send_message(client.get_channel("500419426974302224"), "Dit uur in de top 2000: " + Songs[times])
-                tobedeleted.append(times)
+with open("BMNQuotes", "rb") as in_quotes:
+    Quotes = pickle.load(in_quotes)
 
-        for i in tobedeleted:
-            Songs.pop(i)
+with open("BMNInfo", "rb") as in_info:
+    Info = pickle.load(in_info)
 
-        await asyncio.sleep(60)
+def is_quote_master():
+    async def predicate(ctx):
+        return ctx.author.id == 260843280361586688
+    return commands.check(predicate)
 
 @client.event
 async def on_ready():
 
-    global GameMode
-    print("Ready to Rock!")
-    await client.change_presence(game=discord.Game(name= str("BMN 2019"),  url="https://twitch.tv/Batsphemy", type=1))
-
-@client.event
-async def on_message(message):
-
-    if message.author == client.user:
-        return
-
-    args = message.content.split(" ")
-
-    if args[0].upper() == "ADDSONG":
-
-        d = int(args[1])
-        h = (int(args[2]) - 1)%24
-        if h == 23:
-            d -= 1
-        songname = " ".join(args[3:])
-
-        now = datetime.utcnow()
-        songTime = now.replace(hour=h, day=d)
-
-        Songs[songTime] = songname
-        print(Songs)
-        with open("SongDict", "wb") as save:
-            pickle.dump(Songs, save)
-
-    if message.channel.id == "500627829474459669":
-        msg = message.content
-        msg = msg.replace('*', '')
-
-        await client.delete_message(message)
-        await client.send_message(message.channel, "***" + msg + "*** :bewust: - " + message.author.nick)
+    print("Ready!")
+    stream = discord.Activity(name="BMN 2020", url="https://betamusicnight.nl", type=discord.ActivityType.listening)
+    await client.change_presence(activity=stream)
 
 
-client.loop.create_task(checkSongs())
-client.run("NTAwNjI4NTQ4NTE2NzA4MzUy.DqNmTw.-W1gtIDkqjaKxQkW4zeRLP-uVmw")
+@client.command(name='AddQuote')
+@is_quote_master()
+async def _addQuote(context, *args):
+    quote = " ".join(args)
+    Quotes.append(quote)
+    await context.message.add_reaction("👍")
+    with open("BMNQuotes", "wb") as out_quotes:
+        pickle.dump(Quotes, out_quotes)
+
+@client.command(name='Quote')
+@commands.has_any_role(618181358594031616, 619144995726950444)
+async def _quote(context, *args):
+    await context.message.channel.send(random.choice(Quotes))
+
+
+client.run("NTAwNjI4NTQ4NTE2NzA4MzUy.Xbr9WA.owlUTYMJQmqSjIo6KEIRwnbvmtk")
